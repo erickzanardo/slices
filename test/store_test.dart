@@ -9,7 +9,7 @@ class CounterState extends SlicesState {
 }
 
 class CounterStore extends SlicesStore<CounterState> {
-  CounterStore(CounterState state): super(state);
+  CounterStore(CounterState state) : super(state);
 }
 
 class IncrementAction extends SlicesAction<CounterState> {
@@ -26,6 +26,7 @@ class IncrementAction extends SlicesAction<CounterState> {
 abstract class StateListener {
   void listen(SlicesStore<CounterState> store);
 }
+
 class DummyStateListener extends Mock implements StateListener {}
 
 class AsyncIncrementAction extends AsyncSlicesAction<CounterState> {
@@ -34,7 +35,8 @@ class AsyncIncrementAction extends AsyncSlicesAction<CounterState> {
   AsyncIncrementAction(this.ammount);
 
   @override
-  Future<CounterState> perform(SlicesStore<SlicesState> store, CounterState state) {
+  Future<CounterState> perform(
+      SlicesStore<SlicesState> store, CounterState state) {
     return Future.value(CounterState(state.count + ammount));
   }
 }
@@ -87,4 +89,3 @@ void main() {
     });
   });
 }
-

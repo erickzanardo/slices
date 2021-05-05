@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/mockito.dart';
 import 'package:slices/slices.dart';
 
 class MyState extends SlicesState {
@@ -17,8 +16,8 @@ class MyState extends SlicesState {
     String? lastName,
   }) {
     return MyState(
-        firstName: firstName ?? this.firstName,
-        lastName: lastName ?? this.lastName,
+      firstName: firstName ?? this.firstName,
+      lastName: lastName ?? this.lastName,
     );
   }
 }
@@ -52,10 +51,10 @@ class NameSlice {
 
   @override
   bool operator ==(Object other) =>
-    identical(this, other) ||
-    other is NameSlice &&
-    runtimeType == other.runtimeType &&
-    name == other.name;
+      identical(this, other) ||
+      other is NameSlice &&
+          runtimeType == other.runtimeType &&
+          name == other.name;
 
   @override
   int get hashCode => name.hashCode;
@@ -65,10 +64,10 @@ class FirstNameWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SliceWatcher<MyState, NameSlice>(
-        slicer: (state) => NameSlice(state.firstName),
-        builder: (ctx, store, slice) {
-          return Text(slice.name);
-        },
+      slicer: (state) => NameSlice(state.firstName),
+      builder: (ctx, store, slice) {
+        return Text(slice.name);
+      },
     );
   }
 }
@@ -77,10 +76,10 @@ class LastNameWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SliceWatcher<MyState, NameSlice>(
-        slicer: (state) => NameSlice(state.lastName),
-        builder: (ctx, store, slice) {
-          return Text(slice.name);
-        },
+      slicer: (state) => NameSlice(state.lastName),
+      builder: (ctx, store, slice) {
+        return Text(slice.name);
+      },
     );
   }
 }
@@ -89,24 +88,24 @@ void main() {
   group('SliceWatcher', () {
     testWidgets('gets updated when the slice has changed', (tester) async {
       final myState = MyState(
-          firstName: 'James',
-          lastName: 'Bond',
+        firstName: 'James',
+        lastName: 'Bond',
       );
 
       final store = SlicesStore(myState);
 
       await tester.pumpWidget(
-          MaterialApp(
-              home: SlicesProvider(
-                  store: store,
-                  child: Column(
-                      children: [
-                        FirstNameWidget(),
-                        LastNameWidget(),
-                      ],
-                  ),
-              ),
+        MaterialApp(
+          home: SlicesProvider(
+            store: store,
+            child: Column(
+              children: [
+                FirstNameWidget(),
+                LastNameWidget(),
+              ],
+            ),
           ),
+        ),
       );
 
       expect(find.text('James'), findsOneWidget);
