@@ -126,4 +126,27 @@ void main() {
       expect(find.text('Corleone'), findsOneWidget);
     });
   });
+
+  group('SlicesProvider', () {
+    test('updateShouldNotify returns true when the stores are different', () {
+      final myState = MyState(
+        firstName: 'James',
+        lastName: 'Bond',
+      );
+
+      final store = SlicesStore(myState);
+      final differentStore = SlicesStore(myState);
+
+      final provider = SlicesProvider(store: store, child: Container());
+
+      expect(
+          provider.updateShouldNotify(
+              SlicesProvider(store: store, child: Container())),
+          isFalse);
+      expect(
+          provider.updateShouldNotify(
+              SlicesProvider(store: differentStore, child: Container())),
+          isTrue);
+    });
+  });
 }
