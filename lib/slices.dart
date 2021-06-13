@@ -3,43 +3,53 @@ import 'package:flutter/widgets.dart';
 @immutable
 abstract class SlicesState {}
 
+typedef SlicesStoreListenerFn<T extends SlicesState> = void Function(
+    SlicesStore<T>, SlicesEvent<T>);
+
 class SlicesStore<T extends SlicesState> {
   T state;
 
   SlicesStore(this.state);
 
-  List<void Function(SlicesStore<T>)> _listeners = [];
+  List<SlicesStoreListenerFn<T>> _listeners = [];
 
-  void listen(void Function(SlicesStore<T>) listener) {
+  void listen(SlicesStoreListenerFn<T> listener) {
     _listeners.add(listener);
   }
 
-  void dispose(void Function(SlicesStore<T>) listener) {
+  void dispose(SlicesStoreListenerFn<T> listener) {
     _listeners.remove(listener);
+  }
+
+  void event(SlicesEvent<T> event) {
+    _notifyListeners(event);
   }
 
   void dispatch(SlicesAction<T> action) {
     state = action.perform(this, state);
-    _notifyListeners();
+    _notifyListeners(action);
   }
 
   Future<void> dispatchAsync(AsyncSlicesAction<T> action) async {
     state = await action.perform(this, state);
-    _notifyListeners();
+    _notifyListeners(action);
   }
 
-  void _notifyListeners() {
-    _listeners.forEach((l) => l.call(this));
+  void _notifyListeners(SlicesEvent<T> event) {
+    _listeners.forEach((l) => l.call(this, event));
   }
 }
 
 @immutable
-abstract class SlicesAction<T extends SlicesState> {
+abstract class SlicesEvent<T extends SlicesState> {}
+
+@immutable
+abstract class SlicesAction<T extends SlicesState> extends SlicesEvent<T> {
   T perform(SlicesStore<T> store, T state);
 }
 
 @immutable
-abstract class AsyncSlicesAction<T extends SlicesState> {
+abstract class AsyncSlicesAction<T extends SlicesState> extends SlicesEvent<T> {
   Future<T> perform(SlicesStore<T> store, T state);
 }
 
@@ -68,6 +78,10 @@ class SlicesProvider<T extends SlicesState> extends InheritedWidget {
 }
 
 typedef SlicerFn<T extends SlicesState, S> = S Function(T);
+
+typedef SlicerListenerFn<T extends SlicesState> = void Function(
+    T, SlicesEvent<T>);
+
 typedef SlicerRebuildFn<S> = bool Function(S oldState, S newState);
 
 typedef SliceWatcherBuilder<T extends SlicesState, S> = Widget Function(
@@ -77,12 +91,14 @@ class SliceWatcher<T extends SlicesState, S> extends StatefulWidget {
   final SliceWatcherBuilder<T, S> builder;
   final SlicerFn<T, S> slicer;
   final SlicerRebuildFn<S>? shouldRebuild;
+  final SlicerListenerFn<T>? listener;
 
   SliceWatcher({
     Key? key,
     required this.builder,
     required this.slicer,
     this.shouldRebuild,
+    this.listener,
   }) : super(key: key);
 
   @override
@@ -102,7 +118,9 @@ class _SliceWatcherState<T extends SlicesState, S>
     }
   }
 
-  void _update(SlicesStore<T> store) {
+  void _update(SlicesStore<T> store, SlicesEvent<T> event) {
+    widget.listener?.call(store.state, event);
+
     S newMemo = widget.slicer(store.state);
 
     if (!_shouldRebuild(_memoValue, newMemo)) {

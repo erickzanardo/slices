@@ -23,8 +23,10 @@ class IncrementAction extends SlicesAction<CounterState> {
   }
 }
 
+class MyEvent extends SlicesEvent<CounterState> {}
+
 abstract class StateListener {
-  void listen(SlicesStore<CounterState> store);
+  void listen(SlicesStore<CounterState> store, SlicesEvent<CounterState> event);
 }
 
 class DummyStateListener extends Mock implements StateListener {}
@@ -62,9 +64,10 @@ void main() {
       final store = CounterStore(CounterState(1));
       store.listen(dummyListener.listen);
 
-      store.dispatch(IncrementAction(1));
+      final event = IncrementAction(1);
+      store.dispatch(event);
 
-      verify(dummyListener.listen(store));
+      verify(dummyListener.listen(store, event));
     });
 
     test("Calls the listener when an async action happens", () async {
@@ -72,20 +75,33 @@ void main() {
       final store = CounterStore(CounterState(1));
       store.listen(dummyListener.listen);
 
-      await store.dispatchAsync(AsyncIncrementAction(1));
+      final event = AsyncIncrementAction(1);
+      await store.dispatchAsync(event);
 
-      verify(dummyListener.listen(store));
+      verify(dummyListener.listen(store, event));
+    });
+
+    test("Calls the listener when an event happens", () {
+      final dummyListener = DummyStateListener();
+      final store = CounterStore(CounterState(1));
+      store.listen(dummyListener.listen);
+
+      final event = MyEvent();
+      store.event(event);
+
+      verify(dummyListener.listen(store, event));
     });
 
     test("Correctly removes a listener", () {
       final dummyListener = DummyStateListener();
       final store = CounterStore(CounterState(1));
       store.listen(dummyListener.listen);
-      store.dispatch(IncrementAction(1));
+      final event = IncrementAction(1);
+      store.dispatch(event);
       store.dispose(dummyListener.listen);
       store.dispatch(IncrementAction(1));
 
-      verify(dummyListener.listen(store)).called(1);
+      verify(dummyListener.listen(store, event)).called(1);
     });
   });
 }

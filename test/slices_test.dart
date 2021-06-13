@@ -1,6 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mockito/mockito.dart';
 import 'package:slices/slices.dart';
+
+class DummyListener {
+  void call() {}
+}
+
+class DummyListenerMock extends Mock implements DummyListener {}
 
 class MyState extends SlicesState {
   final String firstName;
@@ -43,6 +50,8 @@ class ChangeLastNameAction extends SlicesAction<MyState> {
     return state.copyWith(lastName: newName);
   }
 }
+
+class MessageEvent extends SlicesEvent<MyState> {}
 
 class NameSlice {
   final String name;
@@ -95,6 +104,27 @@ class LastNameWidget extends StatelessWidget {
       slicer: (state) => NameSlice(state.lastName),
       builder: (ctx, store, slice) {
         return Text(slice.name);
+      },
+    );
+  }
+}
+
+class NameWithMessageBoard extends StatelessWidget {
+  final DummyListener listener;
+
+  NameWithMessageBoard({required this.listener});
+
+  @override
+  Widget build(BuildContext context) {
+    return SliceWatcher<MyState, NameSlice>(
+      slicer: (state) => NameSlice(state.lastName),
+      listener: (state, event) {
+        if (event is MessageEvent) {
+          listener.call();
+        }
+      },
+      builder: (ctx, store, slice) {
+        return Container();
       },
     );
   }
@@ -177,6 +207,27 @@ void main() {
       // Name is longer than 3 characters now,
       // and should have been rendered
       expect(find.text('James'), findsOneWidget);
+    });
+
+    testWidgets('Listener is called when provided', (tester) async {
+      final listenerMock = DummyListenerMock();
+      final myState = MyState(firstName: 'James', lastName: 'Bond');
+      final store = SlicesStore(myState);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: SlicesProvider(
+            store: store,
+            child: Column(
+              children: [NameWithMessageBoard(listener: listenerMock)],
+            ),
+          ),
+        ),
+      );
+
+      store.event(MessageEvent());
+      await tester.pumpAndSettle();
+      verify(listenerMock.call());
     });
   });
 
