@@ -68,6 +68,7 @@ class SlicesProvider<T extends SlicesState> extends InheritedWidget {
 }
 
 typedef SlicerFn<T extends SlicesState, S> = S Function(T);
+typedef SlicerRebuildFn<S> = bool Function(S oldState, S newState);
 
 typedef SliceWatcherBuilder<T extends SlicesState, S> = Widget Function(
     BuildContext, SlicesStore<T>, S);
@@ -75,11 +76,13 @@ typedef SliceWatcherBuilder<T extends SlicesState, S> = Widget Function(
 class SliceWatcher<T extends SlicesState, S> extends StatefulWidget {
   final SliceWatcherBuilder<T, S> builder;
   final SlicerFn<T, S> slicer;
+  final SlicerRebuildFn<S>? shouldRebuild;
 
   SliceWatcher({
     Key? key,
     required this.builder,
     required this.slicer,
+    this.shouldRebuild,
   }) : super(key: key);
 
   @override
@@ -91,10 +94,18 @@ class _SliceWatcherState<T extends SlicesState, S>
   late SlicesStore<T> _store;
   late S _memoValue;
 
+  bool _shouldRebuild(S oldValue, S newValue) {
+    if (widget.shouldRebuild != null) {
+      return widget.shouldRebuild!(oldValue, newValue);
+    } else {
+      return oldValue != newValue;
+    }
+  }
+
   void _update(SlicesStore<T> store) {
     S newMemo = widget.slicer(store.state);
 
-    if (newMemo == _memoValue) {
+    if (!_shouldRebuild(_memoValue, newMemo)) {
       return;
     }
 

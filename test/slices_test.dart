@@ -72,6 +72,22 @@ class FirstNameWidget extends StatelessWidget {
   }
 }
 
+/// A widget that only rebuilds if the name is longer that 3 characters
+class FirstBigNameWidget extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return SliceWatcher<MyState, NameSlice>(
+      slicer: (state) => NameSlice(state.firstName),
+      shouldRebuild: (oldSlice, newSlice) {
+        return oldSlice != newSlice && newSlice.name.length > 3;
+      },
+      builder: (ctx, store, slice) {
+        return Text(slice.name);
+      },
+    );
+  }
+}
+
 class LastNameWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -124,6 +140,43 @@ void main() {
 
       expect(find.text('Vito'), findsOneWidget);
       expect(find.text('Corleone'), findsOneWidget);
+    });
+
+    testWidgets(
+        'When shouldRebuild is provided, updates only when the condition is met',
+        (tester) async {
+      final myState = MyState(firstName: 'J', lastName: 'Bond');
+
+      final store = SlicesStore(myState);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: SlicesProvider(
+            store: store,
+            child: Column(
+              children: [
+                FirstBigNameWidget(),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('J'), findsOneWidget);
+
+      store.dispatch(ChangeFirstNameAction('Ja'));
+
+      await tester.pumpAndSettle();
+
+      // Nothing should be changed
+      expect(find.text('J'), findsOneWidget);
+
+      store.dispatch(ChangeFirstNameAction('James'));
+
+      await tester.pumpAndSettle();
+      // Name is longer than 3 characters now,
+      // and should have been rendered
+      expect(find.text('James'), findsOneWidget);
     });
   });
 
